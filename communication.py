@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, List
-
-
-SAMPLES_PER_BIT = 20
-AMPLITUDE_HIGH = 1.0
-AMPLITUDE_LOW = -1.0
+import math
 
 
 def string_to_bits(text: str) -> List[int]:
@@ -58,28 +54,38 @@ def strip_parity_bits(bits: Iterable[int]) -> List[int]:
     return data_bits
 
 
+SAMPLES_PER_BIT = 20
+AMPLITUDE_HIGH = 1.0
+AMPLITUDE_LOW = 0.1
+THRESHOLD = 0.3
+
+
 def modulate(bits: Iterable[int], samples_per_bit: int = SAMPLES_PER_BIT) -> List[float]:
     bit_list = list(bits)
-    signal = [0.0 for _ in range(len(bit_list) * samples_per_bit)]
+    signal_length = len(bit_list) * samples_per_bit
+    signal = [0.0 for _ in range(signal_length)]
     for i, bit in enumerate(bit_list):
         amplitude = AMPLITUDE_HIGH if bit else AMPLITUDE_LOW
         start = i * samples_per_bit
         for j in range(samples_per_bit):
-            signal[start + j] = amplitude
+            phase = 2 * math.pi * j / samples_per_bit
+            signal[start + j] = amplitude * math.sin(phase)
     return signal
 
 
-def demodulate(signal: Iterable[float], samples_per_bit: int = SAMPLES_PER_BIT) -> List[int]:
-    signal_list = list(signal)
-    if len(signal_list) % samples_per_bit != 0:
-        raise ValueError("Signal length is not aligned to bit boundaries")
-    num_bits = len(signal_list) // samples_per_bit
-    bits: List[int] = []
-    for i in range(num_bits):
+def demodulate(signal: List[float], samples_per_bit: int = SAMPLES_PER_BIT) -> List[int]:
+    bit_count = len(signal) // samples_per_bit
+    bits = []
+    for i in range(bit_count):
         start = i * samples_per_bit
-        end = start + samples_per_bit
-        slice_mean = sum(signal_list[start:end]) / samples_per_bit
-        bits.append(1 if slice_mean > 0 else 0)
+        segment = signal[start:start + samples_per_bit]
+
+        # 计算幅度绝对值的平均
+        avg_amplitude = sum(abs(x) for x in segment) / samples_per_bit
+
+        bit = 1 if avg_amplitude > THRESHOLD else 0
+        bits.append(bit)
+
     return bits
 
 
