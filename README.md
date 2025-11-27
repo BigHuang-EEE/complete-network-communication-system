@@ -28,5 +28,4 @@
 - `network.py`：多主机网络，包含 `Host`、`Router`、`PhysicalChannel`、`AddressTable` 以及辅助封装/恢复函数。
 
 ## 测试与复现
-- 自动测试：`pytest -q`
-- 手动演示：运行 `python test_p2p.py`（点对点）、`python test_multihost.py`（多主机单播 + 并发串行化）。这两段脚本对应评分需求中的“成功传输简单/长消息”“区分主机并正确路由”等项。
+- 运行 `python test_p2p.py`（点对点）、`python test_multihost.py`（多主机单播 + 并发串行化）。这两段脚本对应评分需求中的“成功传输简单/长消息”“区分主机并正确路由”等项。
