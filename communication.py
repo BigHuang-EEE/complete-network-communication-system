@@ -89,18 +89,21 @@ def demodulate(signal: List[float], samples_per_bit: int = SAMPLES_PER_BIT) -> L
     return bits
 
 
+# 帧的编码和解码以及帧的构造（8位src+8位dst+16位length+9*消息字节数）
 @dataclass
 class EncodedFrame:
     src: int
     dst: int
     payload_bits: List[int]
 
+    # 把帧转化为位列表
     def to_bits(self) -> List[int]:
         src_bits = _int_to_bits(self.src)
         dst_bits = _int_to_bits(self.dst)
         length_bits = _int_to_bits(len(self.payload_bits) // 8, width=16)
         return dst_bits + src_bits + length_bits + self.payload_bits
 
+    # 解析帧从位列表
     @staticmethod
     def from_bits(bits: Iterable[int]) -> "EncodedFrame":
         bit_list = list(bits)
@@ -113,6 +116,7 @@ class EncodedFrame:
         return EncodedFrame(src=src, dst=dst, payload_bits=payload_bits)
 
 
+# 整数化为整数列表
 def _int_to_bits(value: int, width: int = 8) -> List[int]:
     if value < 0 or value >= 2**width:
         raise ValueError("Integer out of range for bit conversion")

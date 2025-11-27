@@ -5,7 +5,7 @@ from network import MultiHostNetwork
 
 
 def setup_hosts(network: MultiHostNetwork) -> Tuple:
-    """Register three hosts for the demo."""
+    """注册三个主机作为演示"""
     host_a = network.register_host(1)
     host_b = network.register_host(2)
     host_c = network.register_host(3)
@@ -23,10 +23,11 @@ def demo_unicast(host_a, host_b, host_c) -> None:
         print(f"C received from {host_c.last_received.src}: {host_c.last_received.payload}")
 
 
+# 同时发送的演示
 def demo_concurrent_success(host_a, host_b, host_c) -> None:
     """
-    Simulate two hosts transmitting at (almost) the same time over the shared cable.
-    The channel lock in MultiHostNetwork serializes access so both messages arrive correctly.
+    模拟两个主机在共享电缆上（几乎）同时发送数据。
+    信道锁会将访问串行化，从而确保两条消息都能正确到达。
     """
     print("\n=== Concurrent transmissions (expected success) ===")
     barrier = threading.Barrier(2)
