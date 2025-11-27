@@ -61,3 +61,15 @@ class MultiHostNetwork:
             result = host.receive(received_frame)
             if result and result.dst == host.address:
                 host.last_received = result
+
+    def _build_frame(self, src: int, dst: int, message: str) -> EncodedFrame:
+        if src not in self.hosts:
+            raise ValueError(f"Unknown source host {src}")
+        if dst not in self.hosts and dst != 255:
+            raise ValueError(f"Unknown destination host {dst}")
+        data_bits = string_to_bits(message)
+        parity_bits = add_parity_bits(data_bits)
+        payload_length_bytes = len(parity_bits) // 9
+        if payload_length_bytes >= 2**16:
+            raise ValueError("Payload too large")
+        return EncodedFrame(src=src, dst=dst, payload_bits=parity_bits)
