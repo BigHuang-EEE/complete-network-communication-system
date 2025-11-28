@@ -1,3 +1,5 @@
+import time
+
 from cable import Cable
 from communication import add_parity_bits, bits_to_string, demodulate, modulate, string_to_bits, strip_parity_bits
 from network import CollisionError, MultiHostNetwork
@@ -39,7 +41,10 @@ payload_with_parity = add_parity_bits(data_bits)
 signal = modulate(payload_with_parity)
 # 传输
 cable = Cable()
+time.sleep(cable.get_propagation_delay())
 received_signal = cable.transmit(signal)
+# 绘制传输前后（模拟信道输入/输出）的波形
+cable.plot_signals(window_title="P2P channel waveform")
 # 接收端：解调 -> 校验奇偶位 -> 还原字符串
 received_bits = demodulate(received_signal)
 # 如需模拟错误检测，可取消下一行注释以翻转一个比特

@@ -1,122 +1,154 @@
 """
-Cable (Channel) Simulation Class
-This is the infrastructure provided by the course to simulate physical transmission medium
+Cable (信道) 仿真类
+这是课程提供的用于模拟物理传输介质的基础设施。
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Optional
+from typing import List, Optional, Tuple
 
 
 class Cable:
     """
-    Cable/Channel Simulation Class
-    
-    Features:
-    1. Transmit analog signals
-    2. Add channel noise
-    3. Simulate signal attenuation
-    4. Debug mode: Visualize signal waveforms
+    Cable/Channel 仿真类
+    功能：
+    1.传输模拟信号
+    2.添加信道噪声
+    3.模拟信号衰减
+    4.调试模式：可视化信号波形，不建议使用，我们有提出新的画图方法
     """
     
     def __init__(self, 
                  length: float = 100.0,
                  attenuation: float = 0.1,
-                 noise_level: float = 0.01,
-                 debug_mode: bool = False):
+                 noise_level: float = 0.05,
+                 debug_mode: bool = False,
+                 history_size: int = 10):
         """
-        Initialize the cable
+        初始化 Cable
         
-        Args:
-            length: Cable length (meters)
-            attenuation: Attenuation coefficient (dB/m)
-            noise_level: Noise level (for adding Gaussian white noise)
-            debug_mode: Debug mode, will display signal waveforms when enabled
+        参数说明:
+            length: 电缆长度 (meters)
+            attenuation: 衰减系数 (dB/m)
+            noise_level: 噪声水平 (用于添加 Gaussian white noise)
+            debug_mode: 调试模式，启用后会显示信号波形，关闭就好了
+            history_size: 保存多少次最近的传输，用于绘制历史上的跳跃 (hops)
         """
         self.length = length
         self.attenuation = attenuation
         self.noise_level = noise_level
         self.debug_mode = debug_mode
+        self._history_size = history_size
+        self._plot_counter = 0
         
-        # Store the most recent transmitted signals (for debugging)
+        # 存储最近的传输信号 (for debugging)
         self.last_input_signal: Optional[np.ndarray] = None
         self.last_output_signal: Optional[np.ndarray] = None
+        self.waveform_history: List[Tuple[np.ndarray, np.ndarray]] = []
         
     def transmit(self, signal: np.ndarray) -> np.ndarray:
         """
-        Transmit signal through the cable
+        通过电缆传输信号
         
-        Args:
-            signal: Input analog signal (numpy array)
+        参数说明:
+            signal: 输入的模拟信号 (numpy 数组)
             
-        Returns:
-            Signal after passing through the channel (with attenuation and noise)
+        返回值:
+            经过信道后的信号（包含衰减和噪声）
         """
-        # Save input signal for debugging
+        # 存储输入信号 for debugging
         self.last_input_signal = signal.copy()
         
-        # 1. Apply attenuation
-        # Using exponential attenuation model: A(d) = A0 * exp(-α * d)
+        # 1. 应用 attenuation
+        # 使用指数衰减模型: A(d) = A0 * exp(-α * d)
         attenuation_factor = np.exp(-self.attenuation * self.length / 100)
         attenuated_signal = np.array(signal) * attenuation_factor
         
-        # 2. Add Gaussian white noise
+        # 2. 添加 Gaussian white noise
         if self.noise_level > 0:
             noise = np.random.normal(0, self.noise_level, len(signal))
             noisy_signal = attenuated_signal + noise
         else:
             noisy_signal = attenuated_signal
         
-        # Save output signal for debugging
+        # 存储输出信号 for debugging
         self.last_output_signal = noisy_signal.copy()
+        self._record_history()
         
-        # Display waveforms if debug mode is enabled
+        # 画波形图 if debug mode is enabled
         if self.debug_mode:
-            self.plot_signals()
+            self.plot_signals(window_title="Cable Debug Waveform")
         
         return noisy_signal
     
     def get_propagation_delay(self, signal_speed: float = 2e8) -> float:
         """
-        Calculate propagation delay
+        计算传播时延
         
-        Args:
+        参数说明:
             signal_speed: Signal propagation speed (m/s)
                          Default is 2/3 of light speed (typical for fiber optics)
             
-        Returns:
+        返回值:
             Propagation delay (seconds)
         """
         return self.length / signal_speed
     
-    def plot_signals(self, max_samples: int = 1000):
-        """
-        Plot signal waveforms (debug feature)
-        
-        Args:
-            max_samples: Maximum number of samples to display (to avoid oversized plots)
-        """
+    def _record_history(self) -> None:
+        """存储 a copy of 最近的传输 for later plotting."""
         if self.last_input_signal is None or self.last_output_signal is None:
-            print("No signal data available")
             return
+        self.waveform_history.append((self.last_input_signal, self.last_output_signal))
+        if len(self.waveform_history) > self._history_size:
+            self.waveform_history.pop(0)
+
+    def plot_signals(self, max_samples: int = 1000, history_index: Optional[int] = None,
+                     window_title: Optional[str] = None):
+        """
+        画波形图 (debug feature)
         
-        # Limit the number of samples displayed
-        input_signal = self.last_input_signal[:max_samples]
-        output_signal = self.last_output_signal[:max_samples]
+        参数说明:
+            max_samples: 最大显示样本数
+            history_index: 历史索引以绘制特定的传输记录，可选的
+            window_title: 窗口标题，可选的
+        """
+        if history_index is not None:
+            if not self.waveform_history:
+                print("No signal data available")
+                return
+            try:
+                input_signal, output_signal = self.waveform_history[history_index]
+            except IndexError:
+                print(f"No signal data available at history index {history_index}")
+                return
+        else:
+            if self.last_input_signal is None or self.last_output_signal is None:
+                print("No signal data available")
+                return
+            input_signal = self.last_input_signal
+            output_signal = self.last_output_signal
         
-        # Create figure
-        plt.figure(figsize=(12, 6))
+        # 限制显示样本数
+        input_signal = input_signal[:max_samples]
+        output_signal = output_signal[:max_samples]
+        
+        # 画图
+        self._plot_counter += 1
+        title = window_title or f"Cable Waveform {self._plot_counter}"
+        plt.figure(figsize=(12, 6), num=title)
+        plt.clf()
         
         # Subplot 1: Input signal
         plt.subplot(2, 1, 1)
         plt.plot(input_signal, 'b-', linewidth=0.5)
-        plt.title('Input Signal (Transmitter)')
+        plt.title('Input Signal')
+        plt.xlabel('Sample')
         plt.ylabel('Amplitude')
         plt.grid(True, alpha=0.3)
         
         # Subplot 2: Output signal
         plt.subplot(2, 1, 2)
         plt.plot(output_signal, 'r-', linewidth=0.5)
-        plt.title(f'Output Signal (Receiver) - Attenuation={self.attenuation}, Noise={self.noise_level}')
+        plt.title(f'Output Signal - Attenuation={self.attenuation}, Noise={self.noise_level}')
         plt.xlabel('Sample')
         plt.ylabel('Amplitude')
         plt.grid(True, alpha=0.3)
@@ -126,9 +158,9 @@ class Cable:
     
     def get_signal_stats(self) -> dict:
         """
-        Get signal statistics (debug feature)
+        获取信号统计数据 (debug feature)
         
-        Returns:
+        返回值:
             Dictionary containing signal statistics
         """
         if self.last_input_signal is None or self.last_output_signal is None:
@@ -150,9 +182,9 @@ class Cable:
     
     def _calculate_snr(self) -> float:
         """
-        Calculate Signal-to-Noise Ratio (SNR)
+        计算 Signal-to-Noise Ratio (SNR)
         
-        Returns:
+        返回值:
             SNR in dB
         """
         if self.last_input_signal is None or self.last_output_signal is None:

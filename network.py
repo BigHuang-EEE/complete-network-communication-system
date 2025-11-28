@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -61,6 +62,8 @@ class PhysicalChannel:
     def transmit_bits(self, bits: List[int]) -> List[int]:
         analog_signal = modulate(bits)
         with self.lock:
+            # 模拟传播时延，使物理层行为更贴近真实链路
+            time.sleep(self.cable.get_propagation_delay())
             transmitted = self.cable.transmit(analog_signal)
         return demodulate(transmitted)
 
