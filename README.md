@@ -1,6 +1,7 @@
 # Complete Network Communication System
 
 模拟从物理层到应用层的简化通信流程，覆盖点对点和多主机两级需求，带奇偶校验、帧封装、共享信道串行化，以及传播时延/吞吐观察。
+网络通信系统基于类 circuit switching 的哲学
 
 ## 快速开始
 - 依赖：Python 3，`numpy`，`matplotlib`（用于 `Cable.plot_signals`）。可直接 `python -m pip install numpy matplotlib`。
