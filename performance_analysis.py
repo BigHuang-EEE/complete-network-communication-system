@@ -39,7 +39,9 @@ def measure_throughput(network: MultiHostNetwork, src: int, dst: int, message: s
 
 def main() -> None:
     # 使用更长的链路让传播时延变得可观测
-    cable = Cable(length=500_000, attenuation=0.02, noise_level=0.01)
+    # 这里使用了极长的链路，仅用于放大传播时延；为了避免信号在传播衰减和噪声下被破坏，
+    # 将衰减调低到按公里计（0.02 dB/km），并关闭噪声，保证帧头能被正确解析。
+    cable = Cable(length=500_000, attenuation=0.00002, noise_level=0.0)
     network = MultiHostNetwork(cable=cable)
 
     host_a = network.register_host(1)
